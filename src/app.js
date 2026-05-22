@@ -8,11 +8,11 @@ app.post("/signup", async (req, res) => {
     try {
         const userData = new User({
             firstName: "sumit",
-            // lastName: "kumar",
-            // emailId: "sumit@example.com",
-            // password: "password123",
-            // age: 25,
-            // gender: "Male"
+            lastName: "kumar",
+            emailId: "sumit@example.com",
+            password: "password123",
+            age: 25,
+            gender: "Male"
         })
         await userData.save();
         res.status(200).send("User signed up successfully")
