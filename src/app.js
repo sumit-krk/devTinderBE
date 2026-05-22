@@ -12,7 +12,7 @@ app.post("/signup", async (req, res) => {
             emailId: "sumit@example.com",
             password: "password123",
             age: 25,
-            gender: "Male"
+            // gender: "Male"
         })
         await userData.save();
         res.status(200).send("User signed up successfully")
