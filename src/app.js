@@ -2,23 +2,85 @@ const express = require("express");
 const { userAuth } = require("./middleware/userAuth");
 const { connectDB } = require("./config/database");
 const User = require("./models/userModel");
+const bcrypt=require('bcrypt');
+const { validateSignUpData } = require("./utils/validations");
 const app = express();
+app.use(express.json());
 
 app.post("/signup", async (req, res) => {
     try {
-        const userData = new User({
-            firstName: "sumit",
-            lastName: "kumar",
-            emailId: "sumit@example.com",
-            password: "password123",
-            age: 25,
-            // gender: "Male"
-        })
+        validateSignUpData(req)
+        const password=req.body.password;
+        const hashPass = await bcrypt.hash(password, 5);
+        const userData = new User({...req.body, password:hashPass})
         await userData.save();
         res.status(200).send("User signed up successfully")
     } catch (error) {
         console.error("Error signing up user:", error)
-        res.status(500).send("Error signing up user")
+        res.status(500).send("Error signing up user"+error.message)
+    }
+})
+
+app.post("/login",async (req, res)=>{
+    try{
+        const {emailId, password}=req.body;
+        const findUser=await User.find({emailId:emailId})
+        console.log('findUser',findUser)
+        if(findUser?.length===0){
+            res.status(200).send("No User Data Found...")
+        }else{
+            const compairePass=await bcrypt.compare(password, findUser[0]?.password)
+            if(compairePass){
+                res.status(200).send("Login sucess")
+            }else{
+                res.status(200).send("Invalid crenditals")
+            }
+        }
+        
+    }catch(err){
+        res.status(400).send("something went wrong..")
+    }
+})
+
+app.get("/user", async(req, res)=>{
+    let mailId=req.body.emailId
+    try{
+        let user=await User.find({emailId:mailId}) // find({}) - to get all data
+        if(user?.length===0){
+            res.status(401).send("User Not Found.")
+        }else{
+
+            res.status(200).send(user);
+        }
+    }catch(err){
+        res.status(400).send("something went wrong.")
+    }
+})
+
+app.delete("/deleteUser",async(req, res)=>{
+   try{
+     let userId=req.body.userId;
+     //await User.findByIdAndDelete({_id:userId})
+     await User.findByIdAndDelete(userId)
+     res.status(200).send("User Deleted")
+   }catch(err){
+    res.status(400).send("Something went wrong.")
+   }
+})
+
+app.patch("/updateUser/:userId", async(req, res)=>{
+    try{
+        let userId=req.params.userId;
+        let data=req.body;
+        const ALLOWED_UPDATES=["firstName", "lastName", "password", "photoUrl", "about"];
+        const is_Upadte_Allowed=Object.keys(data).every((ele)=> ALLOWED_UPDATES.includes(ele));
+        if(!is_Upadte_Allowed){
+            throw new Error("Update not Allowed");
+        }
+        await User.findByIdAndUpdate({_id:userId},data);
+        res.status(200).send("Data update Successfully")
+    }catch(err){
+        res.status(400).send("something went wrong."+err.message)
     }
 })
 
