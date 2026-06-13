@@ -2,45 +2,17 @@ const express = require("express");
 const { userAuth } = require("./middleware/userAuth");
 const { connectDB } = require("./config/database");
 const User = require("./models/userModel");
-const bcrypt=require('bcrypt');
-const { validateSignUpData } = require("./utils/validations");
+const cookieParser=require("cookie-parser");
+const authRouter=require("./routes/auth")
+const profileRouter=require("./routes/profile");
+const connectionRoutes = require("./routes/connection");
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
+app.use("/",authRouter);
+app.use("/",profileRouter);
+app.use("/",connectionRoutes);
 
-app.post("/signup", async (req, res) => {
-    try {
-        validateSignUpData(req)
-        const password=req.body.password;
-        const hashPass = await bcrypt.hash(password, 5);
-        const userData = new User({...req.body, password:hashPass})
-        await userData.save();
-        res.status(200).send("User signed up successfully")
-    } catch (error) {
-        console.error("Error signing up user:", error)
-        res.status(500).send("Error signing up user"+error.message)
-    }
-})
-
-app.post("/login",async (req, res)=>{
-    try{
-        const {emailId, password}=req.body;
-        const findUser=await User.find({emailId:emailId})
-        console.log('findUser',findUser)
-        if(findUser?.length===0){
-            res.status(200).send("No User Data Found...")
-        }else{
-            const compairePass=await bcrypt.compare(password, findUser[0]?.password)
-            if(compairePass){
-                res.status(200).send("Login sucess")
-            }else{
-                res.status(200).send("Invalid crenditals")
-            }
-        }
-        
-    }catch(err){
-        res.status(400).send("something went wrong..")
-    }
-})
 
 app.get("/user", async(req, res)=>{
     let mailId=req.body.emailId
@@ -83,8 +55,6 @@ app.patch("/updateUser/:userId", async(req, res)=>{
         res.status(400).send("something went wrong."+err.message)
     }
 })
-
-
 
 const startServer = async () => {
     try {
